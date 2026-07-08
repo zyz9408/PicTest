@@ -8,7 +8,7 @@ Browser apps should load this endpoint directly:
 https://zyz9408.github.io/PicTest/api/images.js
 ```
 
-It generates final image URLs with random mirror assignment every time it runs:
+It generates final image URLs with random mirror assignment every time it runs. The script is self-contained and does not need to request `images.json`.
 
 ```html
 <script src="https://zyz9408.github.io/PicTest/api/images.js"></script>
@@ -32,7 +32,7 @@ document.head.append(script);
 
 The page reads `api/images.js` and renders copyable text links only. It does not create `<img>` tags or load image files in the browser.
 
-`images.json` is the static source mirror/path manifest. A static JSON file on GitHub Pages cannot randomize per request; the JS API reads that manifest and randomizes in the caller's runtime.
+`images.json` is kept as a human-readable source mirror/path manifest. A static JSON file on GitHub Pages cannot randomize per request; the JS API randomizes in the caller's runtime.
 
 The site is published from the `gh-pages` branch:
 

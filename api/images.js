@@ -1,82 +1,62 @@
 (function attachPicTestImagesApi(global) {
-  let sourcePromise;
+  const mirrors = [
+    {
+      name: "GitHub Pages",
+      baseUrl: "https://zyz9408.github.io/PicTest/",
+    },
+    {
+      name: "a466761426-ui CDN",
+      baseUrl: "https://cdn.jsdelivr.net/gh/a466761426-ui/PicTest@main/",
+    },
+  ];
 
-  function getScriptUrl() {
-    const script = global.document && global.document.currentScript;
-    return script ? script.src : "https://zyz9408.github.io/PicTest/api/images.js";
-  }
-
-  function getSourceUrl() {
-    return new URL("../images.json", getScriptUrl()).href;
-  }
+  const images = [
+    {
+      title: "Neon City",
+      description: "A rain-soaked neon city street.",
+      path: "assets/images/neon-city.png",
+      sizeBytes: 2423640,
+    },
+    {
+      title: "Floating Garden",
+      description: "A peaceful garden island above the clouds.",
+      path: "assets/images/floating-garden.png",
+      sizeBytes: 2268689,
+    },
+    {
+      title: "Creative Desk",
+      description: "A warm desk scene for creative work.",
+      path: "assets/images/creative-desk.png",
+      sizeBytes: 2686251,
+    },
+    {
+      title: "Moon Observatory",
+      description: "A small observatory on a rocky moon.",
+      path: "assets/images/moon-observatory.png",
+      sizeBytes: 2629238,
+    },
+  ];
 
   function normalizeBaseUrl(baseUrl) {
-    const resolved = new URL(baseUrl, getSourceUrl()).href;
-    return resolved.endsWith("/") ? resolved : `${resolved}/`;
-  }
-
-  function normalizePath(item) {
-    const path = item.path || item.src;
-
-    if (!path) {
-      throw new Error(`${item.title || "未命名图片"} 缺少 path`);
-    }
-
-    return path.replace(/^\/+/, "");
-  }
-
-  async function loadSource() {
-    if (!sourcePromise) {
-      sourcePromise = fetch(getSourceUrl(), { cache: "no-cache" })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`images.json 请求失败: ${response.status}`);
-          }
-
-          return response.json();
-        })
-        .then((data) => {
-          const mirrors = Array.isArray(data.mirrors)
-            ? data.mirrors.map((mirror, index) => ({
-                name: mirror.name || `镜像 ${index + 1}`,
-                baseUrl: normalizeBaseUrl(mirror.baseUrl),
-              }))
-            : [];
-          const images = Array.isArray(data.images)
-            ? data.images.map((item) => ({ ...item, path: normalizePath(item) }))
-            : [];
-
-          if (mirrors.length === 0) {
-            throw new Error("images.json 缺少 mirrors");
-          }
-
-          if (images.length === 0) {
-            throw new Error("images.json 缺少 images");
-          }
-
-          return { mirrors, images };
-        });
-    }
-
-    return sourcePromise;
+    return baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
   }
 
   function createUrl(mirror, path) {
-    return new URL(path, mirror.baseUrl).href;
+    return new URL(path, normalizeBaseUrl(mirror.baseUrl)).href;
   }
 
-  function pickRandomMirror(mirrors) {
+  function pickRandomMirror() {
     return mirrors[Math.floor(Math.random() * mirrors.length)];
   }
 
-  function summarizeMirrors(mirrors, resolvedImages) {
+  function summarizeMirrors(resolvedImages) {
     return mirrors.map((mirror) => {
       const assignedImages = resolvedImages.filter((image) => image.mirror === mirror.name);
       const assignedBytes = assignedImages.reduce((total, image) => total + (image.sizeBytes || 0), 0);
 
       return {
         name: mirror.name,
-        baseUrl: mirror.baseUrl,
+        baseUrl: normalizeBaseUrl(mirror.baseUrl),
         assignedImages: assignedImages.length,
         assignedBytes,
       };
@@ -84,9 +64,9 @@
   }
 
   async function getPayload() {
-    const source = await loadSource();
-    const resolvedImages = source.images.map((image) => {
-      const mirror = pickRandomMirror(source.mirrors);
+    const resolvedImages = images.map((image) => {
+      const mirror = pickRandomMirror();
+
       return {
         ...image,
         url: createUrl(mirror, image.path),
@@ -95,13 +75,12 @@
     });
 
     return {
-      version: 2,
+      version: 3,
       generatedAt: new Date().toISOString(),
       strategy: "client-random",
-      sourceUrl: getSourceUrl(),
       totalImages: resolvedImages.length,
       totalBytes: resolvedImages.reduce((total, image) => total + (image.sizeBytes || 0), 0),
-      mirrors: summarizeMirrors(source.mirrors, resolvedImages),
+      mirrors: summarizeMirrors(resolvedImages),
       urls: resolvedImages.map((image) => image.url),
       images: resolvedImages,
     };
@@ -113,10 +92,10 @@
   }
 
   const api = {
+    mirrors,
+    sourceImages: images,
     getPayload,
     getUrls,
-    loadSource,
-    sourceUrl: getSourceUrl(),
   };
 
   global.PicTestImagesApi = api;
