@@ -3,29 +3,21 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PicTest Manifest</title>
-    <link rel="stylesheet" href="styles.css?v=20260708-3" />
+    <title>PicTest API</title>
+    <link rel="stylesheet" href="styles.css?v=20260708-4" />
   </head>
   <body>
     <main class="page">
       <header class="header">
-        <p class="eyebrow">Image Manifest</p>
-        <h1>PicTest Manifest</h1>
-        <p class="summary">给其它 app 读取的图片清单；页面只显示路径和直链，不主动加载图片。</p>
+        <p class="eyebrow">Image URL API</p>
+        <h1>PicTest API</h1>
+        <p class="summary">给其它 app 读取的最终图片直链接口；页面只显示接口内容，不主动加载图片。</p>
       </header>
 
       <section class="toolbar" aria-live="polite">
-        <label class="field">
-          <span>分流</span>
-          <select id="strategySelect">
-            <option value="random">随机镜像</option>
-            <option value="hash">按文件固定</option>
-            <option value="primary">主源优先</option>
-          </select>
-        </label>
-        <button id="reloadButton" type="button">刷新</button>
+        <button id="reloadButton" type="button">刷新接口</button>
         <button id="copyAllButton" type="button">复制全部直链</button>
-        <button id="copyManifestButton" type="button">复制清单地址</button>
+        <button id="copyApiButton" type="button">复制接口地址</button>
         <span id="status">等待加载</span>
       </section>
 
@@ -38,15 +30,15 @@
           <h2></h2>
           <p></p>
           <code class="asset-path"></code>
+          <p class="mirror-name"></p>
           <div class="link-row">
             <code class="direct-link"></code>
             <button class="copy-link" type="button">复制</button>
           </div>
-          <div class="mirror-list" aria-label="镜像地址"></div>
         </div>
       </article>
     </template>
 
-    <script src="script.js?v=20260708-3"></script>
+    <script src="script.js?v=20260708-4"></script>
   </body>
 </html>

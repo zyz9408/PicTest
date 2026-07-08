@@ -1,29 +1,39 @@
 # PicTest
 
-GitHub Pages image manifest.
+GitHub Pages image URL API.
 
-Other apps should request the manifest directly:
+Other apps should request this endpoint directly:
 
 ```text
-https://zyz9408.github.io/PicTest/images.json
+https://zyz9408.github.io/PicTest/api/images.json
 ```
 
-The page reads `images.json`, combines each image `path` with one or more mirror `baseUrl` values, then renders copyable text links only. It does not create `<img>` tags or load image files in the browser.
+The endpoint returns final image URLs that have already been assigned to mirrors:
 
-Keep the same file layout in every mirror to use the same `path` list for traffic splitting.
-
-Minimal client-side usage:
+```json
+{
+  "urls": ["https://example.com/assets/images/a.png"],
+  "images": [
+    {
+      "path": "assets/images/a.png",
+      "url": "https://example.com/assets/images/a.png",
+      "mirror": "Mirror name"
+    }
+  ]
+}
+```
 
 ```js
-const manifest = await fetch("https://zyz9408.github.io/PicTest/images.json").then((response) =>
+const payload = await fetch("https://zyz9408.github.io/PicTest/api/images.json").then((response) =>
   response.json(),
 );
 
-const urls = manifest.images.map((image) => {
-  const mirror = manifest.mirrors[Math.floor(Math.random() * manifest.mirrors.length)];
-  return new URL(image.path, mirror.baseUrl).href;
-});
+const urls = payload.urls;
 ```
+
+The page reads `api/images.json` and renders copyable text links only. It does not create `<img>` tags or load image files in the browser.
+
+`images.json` is kept as the source mirror/path manifest.
 
 The site is published from the `gh-pages` branch:
 

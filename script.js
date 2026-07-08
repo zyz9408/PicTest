@@ -2,133 +2,32 @@ const gallery = document.querySelector("#gallery");
 const statusText = document.querySelector("#status");
 const reloadButton = document.querySelector("#reloadButton");
 const copyAllButton = document.querySelector("#copyAllButton");
-const copyManifestButton = document.querySelector("#copyManifestButton");
-const strategySelect = document.querySelector("#strategySelect");
+const copyApiButton = document.querySelector("#copyApiButton");
 const template = document.querySelector("#imageCardTemplate");
-const manifestUrl = new URL("images.json", window.location.href).href;
+const apiUrl = new URL("api/images.json", window.location.href).href;
 
 function setStatus(message) {
   statusText.textContent = message;
 }
 
-function normalizeBaseUrl(baseUrl) {
-  const resolved = new URL(baseUrl, window.location.href).href;
-  return resolved.endsWith("/") ? resolved : `${resolved}/`;
-}
-
-function normalizePath(item) {
-  const path = item.path || item.src;
-
-  if (!path) {
-    throw new Error(`${item.title || "未命名图片"} 缺少 path`);
-  }
-
-  return path.replace(/^\/+/, "");
-}
-
-function normalizeManifest(data) {
-  const fallbackMirror = {
-    name: "当前站点",
-    baseUrl: normalizeBaseUrl(window.location.href),
-  };
-
-  if (Array.isArray(data)) {
-    return {
-      mirrors: [fallbackMirror],
-      images: data.map((item) => ({ ...item, path: normalizePath(item) })),
-    };
-  }
-
-  const mirrors = Array.isArray(data.mirrors) && data.mirrors.length > 0
-    ? data.mirrors.map((mirror, index) => ({
-        name: mirror.name || `镜像 ${index + 1}`,
-        baseUrl: normalizeBaseUrl(mirror.baseUrl),
-      }))
-    : [fallbackMirror];
-
-  const images = Array.isArray(data.images)
-    ? data.images.map((item) => ({ ...item, path: normalizePath(item) }))
-    : [];
-
-  return { mirrors, images };
-}
-
-function createDirectUrl(mirror, path) {
-  return new URL(path, mirror.baseUrl).href;
-}
-
-function hashString(value) {
-  let hash = 2166136261;
-
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-
-  return hash >>> 0;
-}
-
-function pickMirrorIndex(path, mirrorCount) {
-  if (mirrorCount <= 1 || strategySelect.value === "primary") {
-    return 0;
-  }
-
-  if (strategySelect.value === "random") {
-    return Math.floor(Math.random() * mirrorCount);
-  }
-
-  return hashString(path) % mirrorCount;
-}
-
-function setActiveMirror(card, activeIndex) {
-  card.querySelectorAll(".mirror-link").forEach((link, index) => {
-    link.classList.toggle("is-active", index === activeIndex);
-  });
-}
-
-function updateCardUrl(card, url, mirrorIndex) {
-  card.querySelector(".direct-link").textContent = url;
-  card.querySelector(".copy-link").dataset.url = url;
-  setActiveMirror(card, mirrorIndex);
-}
-
-function buildMirrorLinks(item, mirrors) {
-  return mirrors.map((mirror) => ({
-    name: mirror.name,
-    url: createDirectUrl(mirror, item.path),
-  }));
-}
-
-function createCard(item, mirrors) {
+function createCard(item) {
   const card = template.content.firstElementChild.cloneNode(true);
-  const mirrorLinks = buildMirrorLinks(item, mirrors);
-  const selectedIndex = pickMirrorIndex(item.path, mirrorLinks.length);
-  const selectedUrl = mirrorLinks[selectedIndex].url;
-  const mirrorList = card.querySelector(".mirror-list");
-
-  card.querySelector("h2").textContent = item.title;
-  card.querySelector("p").textContent = item.description;
+  card.querySelector("h2").textContent = item.title || item.path;
+  card.querySelector("p").textContent = item.description || "";
   card.querySelector(".asset-path").textContent = item.path;
-  updateCardUrl(card, selectedUrl, selectedIndex);
-
-  mirrorLinks.forEach((mirror, index) => {
-    const link = document.createElement("a");
-    link.className = "mirror-link";
-    link.href = mirror.url;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = mirror.name;
-    link.title = mirror.url;
-    link.dataset.url = mirror.url;
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      updateCardUrl(card, mirror.url, index);
-    });
-    mirrorList.append(link);
-  });
-
-  setActiveMirror(card, selectedIndex);
+  card.querySelector(".mirror-name").textContent = `${item.mirror} / ${formatBytes(item.sizeBytes)}`;
+  card.querySelector(".direct-link").textContent = item.url;
+  card.querySelector(".copy-link").dataset.url = item.url;
   return card;
+}
+
+function formatBytes(sizeBytes) {
+  if (!Number.isFinite(sizeBytes)) {
+    return "unknown size";
+  }
+
+  const sizeMb = sizeBytes / 1024 / 1024;
+  return `${sizeMb.toFixed(2)} MB`;
 }
 
 async function copyText(text, button) {
@@ -162,27 +61,40 @@ function getCurrentLinks() {
   return Array.from(gallery.querySelectorAll(".direct-link"), (link) => link.textContent).filter(Boolean);
 }
 
-async function loadGallery() {
+function validateApiPayload(data) {
+  if (!data || !Array.isArray(data.images)) {
+    throw new Error("api/images.json 格式错误: 缺少 images 数组");
+  }
+
+  for (const item of data.images) {
+    if (!item.url || !item.path) {
+      throw new Error("api/images.json 格式错误: 图片缺少 url 或 path");
+    }
+  }
+}
+
+async function loadApi() {
   reloadButton.disabled = true;
   copyAllButton.disabled = true;
-  copyManifestButton.disabled = true;
+  copyApiButton.disabled = true;
   gallery.replaceChildren();
-  setStatus("正在读取图片清单...");
+  setStatus("正在读取直链接口...");
 
   try {
-    const manifestResponse = await fetch(manifestUrl, { cache: "no-cache" });
+    const response = await fetch(apiUrl, { cache: "no-cache" });
 
-    if (!manifestResponse.ok) {
-      throw new Error(`images.json 请求失败: ${manifestResponse.status}`);
+    if (!response.ok) {
+      throw new Error(`api/images.json 请求失败: ${response.status}`);
     }
 
-    const manifest = normalizeManifest(await manifestResponse.json());
+    const data = await response.json();
+    validateApiPayload(data);
 
-    for (const item of manifest.images) {
-      gallery.append(createCard(item, manifest.mirrors));
+    for (const item of data.images) {
+      gallery.append(createCard(item));
     }
 
-    setStatus(`清单 ${manifest.images.length} 张图片 / ${manifest.mirrors.length} 个镜像；页面未加载图片文件`);
+    setStatus(`接口返回 ${data.images.length} 条直链 / ${data.mirrors?.length || 0} 个分流源；页面未加载图片文件`);
   } catch (error) {
     gallery.replaceChildren();
     const message = error instanceof Error ? error.message : "未知错误";
@@ -190,14 +102,13 @@ async function loadGallery() {
   } finally {
     reloadButton.disabled = false;
     copyAllButton.disabled = getCurrentLinks().length === 0;
-    copyManifestButton.disabled = false;
+    copyApiButton.disabled = false;
   }
 }
 
-reloadButton.addEventListener("click", loadGallery);
-strategySelect.addEventListener("change", loadGallery);
+reloadButton.addEventListener("click", loadApi);
 copyAllButton.addEventListener("click", () => copyText(getCurrentLinks().join("\n"), copyAllButton));
-copyManifestButton.addEventListener("click", () => copyText(manifestUrl, copyManifestButton));
+copyApiButton.addEventListener("click", () => copyText(apiUrl, copyApiButton));
 gallery.addEventListener("click", (event) => {
   const button = event.target.closest(".copy-link");
 
@@ -206,4 +117,4 @@ gallery.addEventListener("click", (event) => {
   }
 });
 
-loadGallery();
+loadApi();
