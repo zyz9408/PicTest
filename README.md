@@ -2,38 +2,37 @@
 
 GitHub Pages image URL API.
 
-Other apps should request this endpoint directly:
+Browser apps should load this endpoint directly:
 
 ```text
-https://zyz9408.github.io/PicTest/api/images.json
+https://zyz9408.github.io/PicTest/api/images.js
 ```
 
-The endpoint returns final image URLs that have already been assigned to mirrors:
+It generates final image URLs with random mirror assignment every time it runs:
 
-```json
-{
-  "urls": ["https://example.com/assets/images/a.png"],
-  "images": [
-    {
-      "path": "assets/images/a.png",
-      "url": "https://example.com/assets/images/a.png",
-      "mirror": "Mirror name"
-    }
-  ]
-}
+```html
+<script src="https://zyz9408.github.io/PicTest/api/images.js"></script>
+<script>
+  const payload = await window.PicTestImagesApi.getPayload();
+  const urls = payload.urls;
+</script>
 ```
+
+JSONP style is also supported:
 
 ```js
-const payload = await fetch("https://zyz9408.github.io/PicTest/api/images.json").then((response) =>
-  response.json(),
-);
+window.handlePicTestImages = (payload) => {
+  console.log(payload.urls);
+};
 
-const urls = payload.urls;
+const script = document.createElement("script");
+script.src = "https://zyz9408.github.io/PicTest/api/images.js?callback=handlePicTestImages";
+document.head.append(script);
 ```
 
-The page reads `api/images.json` and renders copyable text links only. It does not create `<img>` tags or load image files in the browser.
+The page reads `api/images.js` and renders copyable text links only. It does not create `<img>` tags or load image files in the browser.
 
-`images.json` is kept as the source mirror/path manifest.
+`images.json` is the static source mirror/path manifest. A static JSON file on GitHub Pages cannot randomize per request; the JS API reads that manifest and randomizes in the caller's runtime.
 
 The site is published from the `gh-pages` branch:
 
