@@ -3,15 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PicTest Links</title>
-    <link rel="stylesheet" href="styles.css?v=20260708-2" />
+    <title>PicTest Manifest</title>
+    <link rel="stylesheet" href="styles.css?v=20260708-3" />
   </head>
   <body>
     <main class="page">
       <header class="header">
-        <p class="eyebrow">Image Direct Links</p>
-        <h1>PicTest Links</h1>
-        <p class="summary">GitHub Pages 图片直链与镜像分流清单。</p>
+        <p class="eyebrow">Image Manifest</p>
+        <h1>PicTest Manifest</h1>
+        <p class="summary">给其它 app 读取的图片清单；页面只显示路径和直链，不主动加载图片。</p>
       </header>
 
       <section class="toolbar" aria-live="polite">
@@ -25,20 +25,19 @@
         </label>
         <button id="reloadButton" type="button">刷新</button>
         <button id="copyAllButton" type="button">复制全部直链</button>
+        <button id="copyManifestButton" type="button">复制清单地址</button>
         <span id="status">等待加载</span>
       </section>
 
-      <section id="gallery" class="gallery" aria-label="图片列表"></section>
+      <section id="gallery" class="gallery" aria-label="图片清单"></section>
     </main>
 
     <template id="imageCardTemplate">
       <article class="image-card">
-        <a class="image-frame" target="_blank" rel="noopener noreferrer">
-          <span class="loading">Loading</span>
-        </a>
         <div class="image-copy">
           <h2></h2>
           <p></p>
+          <code class="asset-path"></code>
           <div class="link-row">
             <code class="direct-link"></code>
             <button class="copy-link" type="button">复制</button>
@@ -48,6 +47,6 @@
       </article>
     </template>
 
-    <script src="script.js?v=20260708-2"></script>
+    <script src="script.js?v=20260708-3"></script>
   </body>
 </html>
