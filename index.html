@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PicTest Gallery</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="header">
+        <p class="eyebrow">GitHub Pages Image Fetch Demo</p>
+        <h1>PicTest Gallery</h1>
+        <p class="summary">这个页面会请求 GitHub Pages 上的图片资源，并在浏览器里渲染返回的 Blob。</p>
+      </header>
+
+      <section class="toolbar" aria-live="polite">
+        <button id="reloadButton" type="button">重新请求图片</button>
+        <span id="status">等待加载</span>
+      </section>
+
+      <section id="gallery" class="gallery" aria-label="图片列表"></section>
+    </main>
+
+    <template id="imageCardTemplate">
+      <article class="image-card">
+        <div class="image-frame">
+          <span class="loading">Loading</span>
+        </div>
+        <div class="image-copy">
+          <h2></h2>
+          <p></p>
+          <code></code>
+        </div>
+      </article>
+    </template>
+
+    <script src="script.js"></script>
+  </body>
+</html>

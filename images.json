@@ -1,0 +1,22 @@
+[
+  {
+    "title": "Neon City",
+    "description": "A rain-soaked neon city street.",
+    "src": "assets/images/neon-city.png"
+  },
+  {
+    "title": "Floating Garden",
+    "description": "A peaceful garden island above the clouds.",
+    "src": "assets/images/floating-garden.png"
+  },
+  {
+    "title": "Creative Desk",
+    "description": "A warm desk scene for creative work.",
+    "src": "assets/images/creative-desk.png"
+  },
+  {
+    "title": "Moon Observatory",
+    "description": "A small observatory on a rocky moon.",
+    "src": "assets/images/moon-observatory.png"
+  }
+]
