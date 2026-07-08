@@ -114,6 +114,7 @@ h1 {
 }
 
 #copyAllButton,
+#copyManifestButton,
 .copy-link {
   border: 1px solid var(--line);
   background: var(--panel);
@@ -132,39 +133,10 @@ h1 {
 }
 
 .image-card {
-  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
   box-shadow: var(--shadow);
-}
-
-.image-frame {
-  display: grid;
-  aspect-ratio: 1;
-  place-items: center;
-  overflow: hidden;
-  background: #edf1f7;
-  color: var(--muted);
-  text-decoration: none;
-}
-
-.image-frame img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-}
-
-.loading {
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.image-frame.is-broken {
-  padding: 16px;
-  color: #b42318;
-  font-weight: 700;
 }
 
 .image-copy {
@@ -193,11 +165,20 @@ h1 {
   gap: 10px;
 }
 
+.asset-path,
 .direct-link {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: var(--accent-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: #f9fafc;
+  color: var(--muted);
   font-size: 0.78rem;
+}
+
+.direct-link {
+  color: var(--accent-strong);
 }
 
 .copy-link {

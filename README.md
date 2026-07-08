@@ -1,8 +1,29 @@
 # PicTest
 
-GitHub Pages image direct-link list.
+GitHub Pages image manifest.
 
-The page reads `images.json`, combines each image `path` with one or more mirror `baseUrl` values, then renders and copies real image URLs. Keep the same file layout in every mirrored GitHub Pages repository to use the same `path` list for traffic splitting.
+Other apps should request the manifest directly:
+
+```text
+https://zyz9408.github.io/PicTest/images.json
+```
+
+The page reads `images.json`, combines each image `path` with one or more mirror `baseUrl` values, then renders copyable text links only. It does not create `<img>` tags or load image files in the browser.
+
+Keep the same file layout in every mirror to use the same `path` list for traffic splitting.
+
+Minimal client-side usage:
+
+```js
+const manifest = await fetch("https://zyz9408.github.io/PicTest/images.json").then((response) =>
+  response.json(),
+);
+
+const urls = manifest.images.map((image) => {
+  const mirror = manifest.mirrors[Math.floor(Math.random() * manifest.mirrors.length)];
+  return new URL(image.path, mirror.baseUrl).href;
+});
+```
 
 The site is published from the `gh-pages` branch:
 

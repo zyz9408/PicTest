@@ -2,8 +2,10 @@ const gallery = document.querySelector("#gallery");
 const statusText = document.querySelector("#status");
 const reloadButton = document.querySelector("#reloadButton");
 const copyAllButton = document.querySelector("#copyAllButton");
+const copyManifestButton = document.querySelector("#copyManifestButton");
 const strategySelect = document.querySelector("#strategySelect");
 const template = document.querySelector("#imageCardTemplate");
+const manifestUrl = new URL("images.json", window.location.href).href;
 
 function setStatus(message) {
   statusText.textContent = message;
@@ -85,9 +87,6 @@ function setActiveMirror(card, activeIndex) {
 }
 
 function updateCardUrl(card, url, mirrorIndex) {
-  const frame = card.querySelector(".image-frame");
-  frame.href = url;
-  frame.classList.remove("is-broken");
   card.querySelector(".direct-link").textContent = url;
   card.querySelector(".copy-link").dataset.url = url;
   setActiveMirror(card, mirrorIndex);
@@ -105,36 +104,12 @@ function createCard(item, mirrors) {
   const mirrorLinks = buildMirrorLinks(item, mirrors);
   const selectedIndex = pickMirrorIndex(item.path, mirrorLinks.length);
   const selectedUrl = mirrorLinks[selectedIndex].url;
-  const frame = card.querySelector(".image-frame");
   const mirrorList = card.querySelector(".mirror-list");
-  const failedMirrorIndexes = new Set();
 
   card.querySelector("h2").textContent = item.title;
   card.querySelector("p").textContent = item.description;
+  card.querySelector(".asset-path").textContent = item.path;
   updateCardUrl(card, selectedUrl, selectedIndex);
-
-  const image = new Image();
-  image.src = selectedUrl;
-  image.alt = item.title;
-  image.loading = "lazy";
-  frame.replaceChildren(image);
-
-  image.addEventListener("error", () => {
-    const currentUrl = card.querySelector(".direct-link").textContent;
-    const currentIndex = mirrorLinks.findIndex((mirror) => mirror.url === currentUrl);
-    failedMirrorIndexes.add(currentIndex);
-    const nextIndex = mirrorLinks.findIndex((_, index) => !failedMirrorIndexes.has(index));
-
-    if (nextIndex >= 0) {
-      image.src = mirrorLinks[nextIndex].url;
-      updateCardUrl(card, mirrorLinks[nextIndex].url, nextIndex);
-      return;
-    }
-
-    frame.replaceChildren();
-    frame.classList.add("is-broken");
-    frame.textContent = "加载失败";
-  });
 
   mirrorLinks.forEach((mirror, index) => {
     const link = document.createElement("a");
@@ -145,8 +120,8 @@ function createCard(item, mirrors) {
     link.textContent = mirror.name;
     link.title = mirror.url;
     link.dataset.url = mirror.url;
-    link.addEventListener("click", () => {
-      image.src = mirror.url;
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
       updateCardUrl(card, mirror.url, index);
     });
     mirrorList.append(link);
@@ -190,11 +165,12 @@ function getCurrentLinks() {
 async function loadGallery() {
   reloadButton.disabled = true;
   copyAllButton.disabled = true;
+  copyManifestButton.disabled = true;
   gallery.replaceChildren();
   setStatus("正在读取图片清单...");
 
   try {
-    const manifestResponse = await fetch("images.json", { cache: "no-cache" });
+    const manifestResponse = await fetch(manifestUrl, { cache: "no-cache" });
 
     if (!manifestResponse.ok) {
       throw new Error(`images.json 请求失败: ${manifestResponse.status}`);
@@ -206,7 +182,7 @@ async function loadGallery() {
       gallery.append(createCard(item, manifest.mirrors));
     }
 
-    setStatus(`已生成 ${manifest.images.length} 条直链 / ${manifest.mirrors.length} 个镜像`);
+    setStatus(`清单 ${manifest.images.length} 张图片 / ${manifest.mirrors.length} 个镜像；页面未加载图片文件`);
   } catch (error) {
     gallery.replaceChildren();
     const message = error instanceof Error ? error.message : "未知错误";
@@ -214,12 +190,14 @@ async function loadGallery() {
   } finally {
     reloadButton.disabled = false;
     copyAllButton.disabled = getCurrentLinks().length === 0;
+    copyManifestButton.disabled = false;
   }
 }
 
 reloadButton.addEventListener("click", loadGallery);
 strategySelect.addEventListener("change", loadGallery);
 copyAllButton.addEventListener("click", () => copyText(getCurrentLinks().join("\n"), copyAllButton));
+copyManifestButton.addEventListener("click", () => copyText(manifestUrl, copyManifestButton));
 gallery.addEventListener("click", (event) => {
   const button = event.target.closest(".copy-link");
 
