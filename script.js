@@ -4,10 +4,19 @@ const reloadButton = document.querySelector("#reloadButton");
 const copyAllButton = document.querySelector("#copyAllButton");
 const copyApiButton = document.querySelector("#copyApiButton");
 const template = document.querySelector("#imageCardTemplate");
-const apiUrl = new URL("api/images.json", window.location.href).href;
+const apiUrl = new URL("api/images.js", window.location.href).href;
 
 function setStatus(message) {
   statusText.textContent = message;
+}
+
+function formatBytes(sizeBytes) {
+  if (!Number.isFinite(sizeBytes)) {
+    return "unknown size";
+  }
+
+  const sizeMb = sizeBytes / 1024 / 1024;
+  return `${sizeMb.toFixed(2)} MB`;
 }
 
 function createCard(item) {
@@ -19,15 +28,6 @@ function createCard(item) {
   card.querySelector(".direct-link").textContent = item.url;
   card.querySelector(".copy-link").dataset.url = item.url;
   return card;
-}
-
-function formatBytes(sizeBytes) {
-  if (!Number.isFinite(sizeBytes)) {
-    return "unknown size";
-  }
-
-  const sizeMb = sizeBytes / 1024 / 1024;
-  return `${sizeMb.toFixed(2)} MB`;
 }
 
 async function copyText(text, button) {
@@ -61,40 +61,28 @@ function getCurrentLinks() {
   return Array.from(gallery.querySelectorAll(".direct-link"), (link) => link.textContent).filter(Boolean);
 }
 
-function validateApiPayload(data) {
-  if (!data || !Array.isArray(data.images)) {
-    throw new Error("api/images.json 格式错误: 缺少 images 数组");
-  }
-
-  for (const item of data.images) {
-    if (!item.url || !item.path) {
-      throw new Error("api/images.json 格式错误: 图片缺少 url 或 path");
-    }
-  }
-}
-
 async function loadApi() {
   reloadButton.disabled = true;
   copyAllButton.disabled = true;
   copyApiButton.disabled = true;
   gallery.replaceChildren();
-  setStatus("正在读取直链接口...");
+  setStatus("正在生成随机分流直链...");
 
   try {
-    const response = await fetch(apiUrl, { cache: "no-cache" });
-
-    if (!response.ok) {
-      throw new Error(`api/images.json 请求失败: ${response.status}`);
+    if (!window.PicTestImagesApi) {
+      throw new Error("api/images.js 未加载");
     }
 
-    const data = await response.json();
-    validateApiPayload(data);
+    const data = await window.PicTestImagesApi.getPayload();
 
     for (const item of data.images) {
       gallery.append(createCard(item));
     }
 
-    setStatus(`接口返回 ${data.images.length} 条直链 / ${data.mirrors?.length || 0} 个分流源；页面未加载图片文件`);
+    const distribution = data.mirrors
+      .map((mirror) => `${mirror.name}: ${mirror.assignedImages}`)
+      .join(" / ");
+    setStatus(`已随机生成 ${data.images.length} 条直链；${distribution}；页面未加载图片文件`);
   } catch (error) {
     gallery.replaceChildren();
     const message = error instanceof Error ? error.message : "未知错误";
