@@ -34,6 +34,14 @@ The page reads `api/images.js` and renders copyable text links only. It does not
 
 `images.json` is kept as a human-readable source mirror/path manifest. A static JSON file on GitHub Pages cannot randomize per request; the JS API randomizes in the caller's runtime.
 
+Local reader tool:
+
+```text
+tools/image-url-reader.html
+```
+
+Open it locally and enter `owner/repo`, a GitHub repository URL, a Pages URL, or a direct `api/images.js` URL to view all generated image URLs.
+
 The site is published from the `gh-pages` branch:
 
 ```text

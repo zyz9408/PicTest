@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Image URL Reader</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f8fb;
+        --panel: #ffffff;
+        --text: #15171a;
+        --muted: #5d6675;
+        --line: #d8dde6;
+        --accent: #0f766e;
+        --accent-strong: #0b544f;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      .page {
+        width: min(1080px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 34px 0;
+      }
+
+      .header {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 24px;
+      }
+
+      .eyebrow {
+        margin: 0;
+        color: var(--accent-strong);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 2.6rem;
+        line-height: 1;
+      }
+
+      .summary {
+        max-width: 760px;
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .tool {
+        display: grid;
+        gap: 14px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .input-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--text);
+      }
+
+      input {
+        min-height: 42px;
+        padding: 0 12px;
+      }
+
+      textarea {
+        min-height: 150px;
+        padding: 12px;
+        resize: vertical;
+      }
+
+      button {
+        min-height: 42px;
+        border: 0;
+        border-radius: 8px;
+        padding: 0 14px;
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+        font-weight: 800;
+      }
+
+      button.secondary {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--text);
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.65;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .status {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .meta {
+        display: grid;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .meta code,
+      .url-list code {
+        overflow-wrap: anywhere;
+        color: var(--accent-strong);
+      }
+
+      .url-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .url-card {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .url-card h2 {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      .url-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .hidden-frame {
+        display: none;
+      }
+
+      @media (max-width: 640px) {
+        .input-row {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 2.1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="header">
+        <p class="eyebrow">Local Tool</p>
+        <h1>Image URL Reader</h1>
+        <p class="summary">
+          输入 GitHub 仓库地址、owner/repo 或 api/images.js 地址，工具会加载远端 JS 接口并显示已经分流后的最终图片直链。
+        </p>
+      </header>
+
+      <section class="tool">
+        <div class="input-row">
+          <input
+            id="sourceInput"
+            value="zyz9408/PicTest"
+            placeholder="zyz9408/PicTest 或 https://github.com/zyz9408/PicTest"
+          />
+          <button id="loadButton" type="button">读取图片地址</button>
+        </div>
+
+        <div class="actions">
+          <button id="copyButton" class="secondary" type="button" disabled>复制全部地址</button>
+          <button id="clearButton" class="secondary" type="button">清空</button>
+          <span id="status" class="status">等待读取</span>
+        </div>
+
+        <div id="meta" class="meta"></div>
+        <textarea id="urlOutput" readonly placeholder="图片直链会显示在这里"></textarea>
+        <div id="urlList" class="url-list"></div>
+      </section>
+    </main>
+
+    <script>
+      const sourceInput = document.querySelector("#sourceInput");
+      const loadButton = document.querySelector("#loadButton");
+      const copyButton = document.querySelector("#copyButton");
+      const clearButton = document.querySelector("#clearButton");
+      const statusText = document.querySelector("#status");
+      const meta = document.querySelector("#meta");
+      const urlOutput = document.querySelector("#urlOutput");
+      const urlList = document.querySelector("#urlList");
+
+      function setStatus(message) {
+        statusText.textContent = message;
+      }
+
+      function normalizeRepoName(value) {
+        return value.replace(/^\//, "").replace(/\.git$/i, "");
+      }
+
+      function parseGitHubRepo(input) {
+        const trimmed = input.trim();
+        const sshMatch = trimmed.match(/^git@github\.com:([^/]+)\/(.+?)(?:\.git)?$/i);
+
+        if (sshMatch) {
+          return {
+            owner: sshMatch[1],
+            repo: normalizeRepoName(sshMatch[2]),
+          };
+        }
+
+        if (/^[^/\s]+\/[^/\s]+$/.test(trimmed)) {
+          const [owner, repo] = trimmed.split("/");
+          return {
+            owner,
+            repo: normalizeRepoName(repo),
+          };
+        }
+
+        try {
+          const url = new URL(trimmed);
+
+          if (url.hostname === "github.com") {
+            const [owner, repo] = url.pathname.split("/").filter(Boolean);
+
+            if (owner && repo) {
+              return {
+                owner,
+                repo: normalizeRepoName(repo),
+              };
+            }
+          }
+        } catch {
+          return null;
+        }
+
+        return null;
+      }
+
+      function buildCandidateScripts(input) {
+        const trimmed = input.trim();
+        const candidates = [];
+
+        try {
+          const url = new URL(trimmed);
+
+          if (url.pathname.endsWith(".js")) {
+            url.searchParams.set("reader", Date.now().toString());
+            candidates.push(url.href);
+            return candidates;
+          }
+
+          if (url.hostname.endsWith(".github.io")) {
+            const basePath = url.pathname.replace(/\/$/, "");
+            const scriptUrl = new URL(`${basePath}/api/images.js`, url.origin);
+            scriptUrl.searchParams.set("reader", Date.now().toString());
+            candidates.push(scriptUrl.href);
+            return candidates;
+          }
+        } catch {
+          // Fall through to GitHub repo parsing.
+        }
+
+        const repo = parseGitHubRepo(trimmed);
+
+        if (!repo) {
+          throw new Error("无法识别地址，请输入 owner/repo、GitHub 仓库 URL、Pages URL 或 api/images.js URL");
+        }
+
+        const cache = Date.now().toString();
+        candidates.push(`https://${repo.owner}.github.io/${repo.repo}/api/images.js?reader=${cache}`);
+        candidates.push(`https://cdn.jsdelivr.net/gh/${repo.owner}/${repo.repo}@gh-pages/api/images.js?reader=${cache}`);
+        candidates.push(`https://cdn.jsdelivr.net/gh/${repo.owner}/${repo.repo}@main/api/images.js?reader=${cache}`);
+        return candidates;
+      }
+
+      function runScriptCandidate(scriptUrl) {
+        return new Promise((resolve, reject) => {
+          const id = `reader_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+          const frame = document.createElement("iframe");
+          const timeout = window.setTimeout(() => {
+            window.removeEventListener("message", handleMessage);
+            frame.remove();
+            reject(new Error(`读取超时: ${scriptUrl}`));
+          }, 12000);
+
+          frame.className = "hidden-frame";
+          frame.setAttribute("sandbox", "allow-scripts");
+
+          function handleMessage(event) {
+            const data = event.data;
+
+            if (!data || data.id !== id) {
+              return;
+            }
+
+            window.clearTimeout(timeout);
+            window.removeEventListener("message", handleMessage);
+            frame.remove();
+
+            if (data.ok) {
+              resolve(data.payload);
+            } else {
+              reject(new Error(data.error || `读取失败: ${scriptUrl}`));
+            }
+          }
+
+          window.addEventListener("message", handleMessage);
+
+          const scriptSource = JSON.stringify(scriptUrl);
+          frame.srcdoc = `<!doctype html><meta charset="utf-8">
+<script>
+window.onerror = function(message) {
+  parent.postMessage({ id: ${JSON.stringify(id)}, ok: false, error: String(message) }, "*");
+};
+<\/script>
+<script src=${scriptSource}><\/script>
+<script>
+(async function() {
+  try {
+    if (!window.PicTestImagesApi || typeof window.PicTestImagesApi.getPayload !== "function") {
+      throw new Error("脚本没有提供 PicTestImagesApi.getPayload()");
+    }
+
+    const payload = await window.PicTestImagesApi.getPayload();
+    parent.postMessage({ id: ${JSON.stringify(id)}, ok: true, payload }, "*");
+  } catch (error) {
+    parent.postMessage({
+      id: ${JSON.stringify(id)},
+      ok: false,
+      error: error && error.message ? error.message : String(error)
+    }, "*");
+  }
+})();
+<\/script>`;
+          document.body.append(frame);
+        });
+      }
+
+      async function loadPayload(input) {
+        const candidates = buildCandidateScripts(input);
+        const errors = [];
+
+        for (const candidate of candidates) {
+          setStatus(`正在尝试 ${candidate}`);
+
+          try {
+            const payload = await runScriptCandidate(candidate);
+            return { payload, scriptUrl: candidate, tried: candidates };
+          } catch (error) {
+            errors.push(`${candidate}\n${error.message}`);
+          }
+        }
+
+        throw new Error(errors.join("\n\n"));
+      }
+
+      function renderPayload(result) {
+        const payload = result.payload;
+        const images = Array.isArray(payload.images) ? payload.images : [];
+        const urls = Array.isArray(payload.urls) ? payload.urls : images.map((image) => image.url).filter(Boolean);
+
+        urlOutput.value = urls.join("\n");
+        copyButton.disabled = urls.length === 0;
+        meta.replaceChildren();
+        urlList.replaceChildren();
+
+        const rows = [
+          `脚本: ${result.scriptUrl}`,
+          `版本: ${payload.version || "unknown"}`,
+          `策略: ${payload.strategy || "unknown"}`,
+          `图片数: ${urls.length}`,
+          `生成时间: ${payload.generatedAt || "unknown"}`,
+        ];
+
+        for (const row of rows) {
+          const line = document.createElement("div");
+          line.textContent = row;
+          meta.append(line);
+        }
+
+        images.forEach((image, index) => {
+          const card = document.createElement("article");
+          card.className = "url-card";
+
+          const title = document.createElement("h2");
+          title.textContent = image.title || image.path || `Image ${index + 1}`;
+
+          const detail = document.createElement("p");
+          detail.textContent = `${image.mirror || "unknown mirror"} / ${image.path || ""}`;
+
+          const code = document.createElement("code");
+          code.textContent = image.url || urls[index] || "";
+
+          card.append(title, detail, code);
+          urlList.append(card);
+        });
+
+        setStatus(`完成：读取 ${urls.length} 条图片直链`);
+      }
+
+      async function handleLoad() {
+        loadButton.disabled = true;
+        copyButton.disabled = true;
+        meta.replaceChildren();
+        urlList.replaceChildren();
+        urlOutput.value = "";
+
+        try {
+          const result = await loadPayload(sourceInput.value);
+          renderPayload(result);
+        } catch (error) {
+          setStatus("读取失败");
+          urlOutput.value = error.message;
+        } finally {
+          loadButton.disabled = false;
+        }
+      }
+
+      async function copyUrls() {
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(urlOutput.value);
+        } else {
+          urlOutput.focus();
+          urlOutput.select();
+          document.execCommand("copy");
+        }
+
+        const original = copyButton.textContent;
+        copyButton.textContent = "已复制";
+        window.setTimeout(() => {
+          copyButton.textContent = original;
+        }, 1200);
+      }
+
+      function clearOutput() {
+        meta.replaceChildren();
+        urlList.replaceChildren();
+        urlOutput.value = "";
+        copyButton.disabled = true;
+        setStatus("已清空");
+      }
+
+      loadButton.addEventListener("click", handleLoad);
+      copyButton.addEventListener("click", copyUrls);
+      clearButton.addEventListener("click", clearOutput);
+      sourceInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          handleLoad();
+        }
+      });
+    </script>
+  </body>
+</html>
