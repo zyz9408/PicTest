@@ -3,19 +3,28 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PicTest Gallery</title>
+    <title>PicTest Links</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main class="page">
       <header class="header">
-        <p class="eyebrow">GitHub Pages Image Fetch Demo</p>
-        <h1>PicTest Gallery</h1>
-        <p class="summary">这个页面会请求 GitHub Pages 上的图片资源，并在浏览器里渲染返回的 Blob。</p>
+        <p class="eyebrow">Image Direct Links</p>
+        <h1>PicTest Links</h1>
+        <p class="summary">GitHub Pages 图片直链与镜像分流清单。</p>
       </header>
 
       <section class="toolbar" aria-live="polite">
-        <button id="reloadButton" type="button">重新请求图片</button>
+        <label class="field">
+          <span>分流</span>
+          <select id="strategySelect">
+            <option value="hash">按文件固定</option>
+            <option value="random">随机镜像</option>
+            <option value="primary">主源优先</option>
+          </select>
+        </label>
+        <button id="reloadButton" type="button">刷新</button>
+        <button id="copyAllButton" type="button">复制全部直链</button>
         <span id="status">等待加载</span>
       </section>
 
@@ -24,13 +33,17 @@
 
     <template id="imageCardTemplate">
       <article class="image-card">
-        <div class="image-frame">
+        <a class="image-frame" target="_blank" rel="noopener noreferrer">
           <span class="loading">Loading</span>
-        </div>
+        </a>
         <div class="image-copy">
           <h2></h2>
           <p></p>
-          <code></code>
+          <div class="link-row">
+            <code class="direct-link"></code>
+            <button class="copy-link" type="button">复制</button>
+          </div>
+          <div class="mirror-list" aria-label="镜像地址"></div>
         </div>
       </article>
     </template>
